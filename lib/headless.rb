@@ -125,7 +125,7 @@ private
 
   def attach_xvfb
     possible_display_set = @autopick_display ? @display..MAX_DISPLAY_NUMBER : Array(@display)
-    pick_available_display(possible_display_set, @reuse_display)
+    pick_available_display(possible_display_set.to_a.shuffle, @reuse_display)
   end
 
   def pick_available_display(display_set, can_reuse)
