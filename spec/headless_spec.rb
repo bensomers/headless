@@ -21,13 +21,20 @@ describe Headless do
       it "starts Xvfb" do
         Headless.any_instance.should_receive(:system).with("/usr/bin/Xvfb :99 -screen 0 1280x1024x24 -ac >/dev/null 2>&1 &").and_return(true)
 
-        headless = Headless.new
+        headless = Headless.new(:display => 99)
       end
 
       it "allows setting screen dimensions" do
         Headless.any_instance.should_receive(:system).with("/usr/bin/Xvfb :99 -screen 0 1024x768x16 -ac >/dev/null 2>&1 &").and_return(true)
 
-        headless = Headless.new(:dimensions => "1024x768x16")
+        headless = Headless.new(:display => 99, :dimensions => "1024x768x16")
+      end
+
+      it "allows setting the maximum display number" do
+        Headless.any_instance.should_receive(:system).with("/usr/bin/Xvfb :99 -screen 0 1024x768x16 -ac >/dev/null 2>&1 &").and_return(true)
+
+        headless = Headless.new(:display => 99, :dimensions => "1024x768x16", :max_display_number => 9001)
+        expect(headless.instance_variable_get(:@max_display_number)).to eq 9001
       end
     end
 
@@ -38,7 +45,7 @@ describe Headless do
       end
 
       context "and display reuse is allowed" do
-        let(:options) { {:reuse => true} }
+        let(:options) { {:reuse => true, :display => 99} }
 
         it "should reuse the existing Xvfb" do
           Headless.new(options).display.should == 99
@@ -48,7 +55,11 @@ describe Headless do
       context "and display reuse is not allowed" do
         let(:options) { {:reuse => false} }
 
-        it "should pick the next available display number" do
+        it "should pick different display numbers in a random order" do
+          Array.any_instance.stub(:shuffle).and_return([99, 9001, 100])
+          Headless.new(options).display.should == 9001
+
+          Headless::CliUtil.stub(:read_pid).with('/tmp/.X9001-lock').and_return(31337)
           Headless.new(options).display.should == 100
         end
 
@@ -60,9 +71,9 @@ describe Headless do
           end
 
           context "and autopicking is allowed" do
-            let(:options) { {:reuse => false, :display => 99, :autopick => true} }
+            let(:options) { {:reuse => false, :display => 99, :max_display_number => 100, :autopick => true} }
 
-            it "should pick the next available display number" do
+            it "should pick a different display number" do
               Headless.new(options).display.should == 100
             end
           end
@@ -85,7 +96,7 @@ describe Headless do
       end
 
       context "and display autopicking is allowed" do
-        let(:options) { {:autopick => true} }
+        let(:options) { {:autopick => true, :max_display_number => 100} }
 
         it "should pick the next display number" do
           Headless.new(options).display.should == 100
@@ -95,7 +106,7 @@ describe Headless do
   end
 
   context "lifecycle" do
-    let(:headless) { Headless.new }
+    let(:headless) { Headless.new(:display => 99) }
     describe "#start" do
       it "switches to the headless server" do
         ENV['DISPLAY'].should == ":31337"

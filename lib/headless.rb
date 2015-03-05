@@ -73,6 +73,7 @@ class Headless
     @dimensions = options.fetch(:dimensions, DEFAULT_DISPLAY_DIMENSIONS)
     @video_capture_options = options.fetch(:video, {})
     @destroy_at_exit = options.fetch(:destroy_at_exit, true)
+    @max_display_number = options.fetch(:max_display_number, MAX_DISPLAY_NUMBER)
 
     # FIXME Xvfb launch should not happen inside the constructor
     attach_xvfb
@@ -124,7 +125,7 @@ class Headless
 private
 
   def attach_xvfb
-    possible_display_set = @autopick_display ? @display..MAX_DISPLAY_NUMBER : Array(@display)
+    possible_display_set = @autopick_display ? @display..@max_display_number : Array(@display)
     pick_available_display(possible_display_set.to_a.shuffle, @reuse_display)
   end
 
